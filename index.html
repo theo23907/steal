@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nightshift</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+:root{--night:#0a0d19;--ink:#131933;--ink2:#1c2347;--amber:#f5b942;--bone:#ece6d8;--dim:#8d93ad;--red:#e5484d;--teal:#45c1b0;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{margin:0;background:var(--night);color:var(--bone);font-family:'Barlow Condensed','Arial Narrow',system-ui,sans-serif;font-size:19px}
+body{background:radial-gradient(800px 380px at 88% -8%,#2b3070 0,transparent 62%),var(--night);min-height:100%}
+h1,h2,h3{font-family:'Special Elite','Courier New',monospace;font-weight:400;margin:0}
+#app{max-width:860px;margin:0 auto;padding:16px}
+header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;padding:8px 0 14px;position:relative}
+header h1{font-size:2.3rem;letter-spacing:.02em}
+.moon{position:absolute;right:4px;top:-4px;width:54px;height:54px;border-radius:50%;background:#f3e9c8;box-shadow:0 0 40px 8px #f3e9c855,inset -14px -4px 0 #cdbf92;opacity:.9}
+.cash{font-family:'Special Elite',monospace;font-size:1.6rem;color:var(--amber)}
+.sub{color:var(--dim);font-size:.9rem}
+nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+nav button{flex:1;min-width:92px}
+button{font:inherit;cursor:pointer;border:0;border-radius:3px;padding:8px 14px;color:var(--bone);background:var(--ink2)}
+button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+button:disabled{opacity:.4;cursor:not-allowed}
+nav button.on{background:var(--amber);color:#1a1405;font-weight:600}
+.btn{background:var(--amber);color:#1a1405;font-weight:600}
+.ghost{background:transparent;border:1px solid #3a4272}
+.card{background:var(--ink);border-left:3px solid var(--amber);padding:12px 14px;margin-bottom:10px;border-radius:2px}
+.card.lock{border-left-color:#3a4272}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-top:8px}
+.tile{background:var(--ink2);padding:10px;text-align:center;border-radius:2px}
+.tile .e{font-size:2rem;line-height:1.2}
+.tile.no .e{filter:brightness(0) opacity(.5)}
+.tile.no{opacity:.6}
+.pip{display:inline-block;width:14px;height:6px;background:#2f3866;margin-right:3px}
+.pip.f{background:var(--amber)}
+.pill{display:inline-block;padding:2px 9px;background:var(--ink2);margin:2px 4px 2px 0;border-radius:99px;font-size:.85rem}
+.up{color:var(--teal)}.dn{color:var(--red)}
+.car{position:relative;background:linear-gradient(#0c1022,#161c3b);padding:18px 14px;margin-bottom:12px;overflow:hidden;border-bottom:3px solid #000}
+.car .v{font-size:4rem;line-height:1;display:inline-block;transform:scaleX(-1)}
+.car::after{content:"";position:absolute;left:78px;top:34px;width:240px;height:44px;background:linear-gradient(90deg,#f5e6a866,transparent);clip-path:polygon(0 40%,100% 0,100% 100%,0 60%);animation:flick 3s infinite}
+@keyframes flick{0%,92%,100%{opacity:1}95%{opacity:.35}}
+#game{position:fixed;inset:0;background:#05070e;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:env(safe-area-inset-top,0px) 8px env(safe-area-inset-bottom,0px)}
+#game[hidden],#modal[hidden]{display:none}
+#hud{width:100%;max-width:760px;display:flex;gap:14px;align-items:center;padding:6px 2px;font-size:1.05rem}
+#bar{flex:1;height:10px;background:#1b2040;border-radius:5px;overflow:hidden}
+#bar i{display:block;height:100%;width:0;background:var(--teal)}
+canvas{width:100%;max-width:760px;aspect-ratio:640/440;background:#000;border:1px solid #232a52}
+#pad{display:grid;grid-template-columns:repeat(3,56px);gap:6px;margin-top:8px;touch-action:none;user-select:none}
+#pad button{height:46px;touch-action:none}
+#hint{color:var(--dim);font-size:.85rem;margin-top:4px;text-align:center}
+#modal{position:fixed;inset:0;background:#000c;z-index:9;display:flex;align-items:center;justify-content:center;padding:16px}
+#modal .box{background:var(--ink);border-top:3px solid var(--amber);padding:20px;max-width:420px;width:100%;max-height:90vh;overflow:auto}
+#modal.bad .box{border-top-color:var(--red)}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--amber);color:#1a1405;padding:8px 16px;border-radius:3px;font-weight:600;z-index:20;opacity:0;pointer-events:none;transition:opacity .25s;text-align:center}
+#toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){.car::after{animation:none}}
+</style></head>
+<body>
+<div id="app">
+<header><div><h1>Nightshift</h1><div class="sub" id="stats"></div></div><div class="moon"></div><div class="cash" id="cash"></div></header>
+<nav id="nav"></nav><main id="view"></main>
+</div>
+<div id="game" hidden>
+<div id="hud"><span id="loot"></span><span id="bar"><i></i></span></div>
+<canvas id="cv" width="640" height="440"></canvas>
+<div id="pad"><span></span><button data-k="ArrowUp">▲</button><span></span><button data-k="ArrowLeft">◀</button><button id="crouch">Sneak</button><button data-k="ArrowRight">▶</button><span></span><button data-k="ArrowDown">▼</button><span></span></div>
+<div id="hint">Move with arrow keys or WASD. Hold Shift to sneak. Reach the door to leave.</div>
+</div>
+<div id="modal" hidden></div><div id="toast"></div>
+<script>
+const T=40,COLS=16,ROWS=11,W=COLS*T,H=ROWS*T;
+const STORES=[
+{id:'corner',n:'Corner shop',cost:0,g:1,gs:48,bonus:150,blurb:'One bored clerk and a flickering sign. Easy money.',items:[['candy','🍫','Candy crate',15],['drinks','🥤','Energy drinks',30],['radio','📻','Pocket radio',70],['lotto','🎟️','Lottery tickets',140]]},
+{id:'pawn',n:'Pawn shop',cost:250,g:1,gs:62,bonus:600,blurb:'Other people’s regrets, priced to move.',items:[['watch','⌚','Wristwatch',160],['cam','📷','Film camera',220],['guitar','🎸','Electric guitar',300],['ring','💍','Gold ring',450]]},
+{id:'tech',n:'Electronics store',cost:900,g:2,gs:60,bonus:1800,blurb:'Two guards, cameras everywhere, shelves full of gadgets.',items:[['phone','📱','Phones',320],['console','🎮','Game console',420],['laptop','💻','Laptop',600],['drone','🛸','Camera drone',850]]},
+{id:'jewel',n:'Jewelry store',cost:3000,g:2,gs:76,bonus:6000,blurb:'Fast guards. Spotless glass. The big score.',items:[['pearls','📿','Pearl strand',800],['vase','🏺','Ming vase',1300],['diamond','💎','Loose diamond',2000],['crown','👑','Tiara',3500]]}];
+const ALL={};STORES.forEach(s=>s.items.forEach(i=>ALL[i[0]]={id:i[0],e:i[1],n:i[2],v:i[3],s:s.id}));
+const UP={spd:{n:'Soft-soled shoes',d:'Move faster in the dark',c:[150,400,900,1800]},bag:{n:'Bigger duffel',d:'Carry two more items per run',c:[200,500,1200,2500]},hood:{n:'Dark hoodie',d:'Guards notice you more slowly',c:[250,700,1500,3000]}};
+const KEY='nightshift-v1';
+let S={cash:0,stash:{},found:{},bonus:{},unlocked:{corner:1},up:{spd:0,bag:0,hood:0},nights:0,caught:0},tab='home',mk={},G=null;
+try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const $=id=>document.getElementById(id),$$=(a,b)=>a+Math.random()*(b-a);
+const money=n=>'$'+Math.round(n).toLocaleString('en-US');
+function reroll(){STORES.forEach(s=>mk[s.id]=Math.round($$(.7,1.35)*100)/100)}reroll();
+function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),2200)}
+const stashCount=()=>Object.values(S.stash).reduce((a,b)=>a+b,0);
+function render(){
+ $('cash').textContent=money(S.cash);
+ $('stats').textContent=S.nights+' nights out, '+S.caught+' times caught, '+stashCount()+' items in the stash';
+ $('nav').innerHTML=[['home','Hideout'],['coll','Collection'],['fence','The fence'],['gear','Gear']].map(t=>`<button data-a="tab" data-v="${t[0]}" class="${tab==t[0]?'on':''}">${t[1]}</button>`).join('');
+ $('view').innerHTML=({home:vHome,coll:vColl,fence:vFence,gear:vGear})[tab]();
+}
+function vHome(){
+ return '<h2 style="margin-bottom:10px">Tonight’s jobs</h2>'+STORES.map(s=>{
+  const u=S.unlocked[s.id];
+  return `<div class="card ${u?'':'lock'}"><div class="row"><div><h3>${s.n}</h3><div class="sub">${s.blurb}</div><div class="sub">${s.g} guard${s.g>1?'s':''}, loot worth ${money(s.items[0][3])} to ${money(s.items[3][3])}</div></div>
+  ${u?`<button class="btn" data-a="go" data-v="${s.id}">Go out</button>`:`<button class="ghost" data-a="unlock" data-v="${s.id}" ${S.cash<s.cost?'disabled':''}>Case it for ${money(s.cost)}</button>`}</div></div>`}).join('')
+  +'<p class="sub">Grab what you can, then get back to the door before a guard’s flashlight finds you. Sell your haul to the fence, or keep one of everything for the collection.</p>';
+}
+function vColl(){
+ const total=Object.keys(ALL).length,got=Object.keys(S.found).length;
+ return `<h2>Collection</h2><div class="sub" style="margin:4px 0 12px">${got} of ${total} pieces found. Complete a store’s set for a cash bonus.</div>`+STORES.map(s=>{
+  const n=s.items.filter(i=>S.found[i[0]]).length;
+  return `<div class="card"><div class="row"><h3>${s.n}</h3><span class="sub">${n}/4 ${S.bonus[s.id]?'<span class="up">Set bonus paid '+money(s.bonus)+'</span>':'Bonus '+money(s.bonus)}</span></div><div class="grid">`+
+  s.items.map(i=>{const f=S.found[i[0]];return `<div class="tile ${f?'':'no'}"><div class="e">${i[1]}</div><div>${f?i[2]:'Not found yet'}</div><div class="sub">${f?money(i[3])+' · in stash ×'+(S.stash[i[0]]||0):'Try the '+s.n.toLowerCase()}</div></div>`}).join('')+'</div></div>'}).join('');
+}
+function vFence(){
+ const ids=Object.keys(S.stash).filter(k=>S.stash[k]>0);
+ const car=`<div class="car"><span class="v">🚘</span><div style="margin-left:90px;margin-top:-52px;position:relative;z-index:1"><h3>Vic’s sedan</h3><div class="sub">Engine running, window down, no questions asked.</div></div></div>`;
+ const dem='<div>'+STORES.map(s=>`<span class="pill">${s.n}: <b class="${mk[s.id]>=1?'up':'dn'}">${Math.round(mk[s.id]*100)}%</b></span>`).join('')+'</div>';
+ if(!ids.length)return car+dem+'<div class="card lock" style="margin-top:10px">Your stash is empty. Go out after dark and bring something back.</div>';
+ return car+dem+'<div style="margin-top:10px">'+ids.map(id=>{const it=ALL[id],p=Math.round(it.v*mk[it.s]);return `<div class="card"><div class="row"><div>${it.e} <b>${it.n}</b> ×${S.stash[id]}<div class="sub">Vic pays ${money(p)} each</div></div><div><button class="ghost" data-a="sell" data-v="${id}">Sell 1</button> <button class="btn" data-a="sellall" data-v="${id}">Sell all ${money(p*S.stash[id])}</button></div></div></div>`}).join('')+'<button class="btn" data-a="sellevery">Sell everything</button></div>';
+}
+function vGear(){
+ return '<h2 style="margin-bottom:10px">Gear</h2>'+Object.keys(UP).map(k=>{const u=UP[k],l=S.up[k],max=l>=u.c.length;
+  return `<div class="card"><div class="row"><div><h3>${u.n}</h3><div class="sub">${u.d}</div><div style="margin-top:6px">${u.c.map((c,i)=>`<span class="pip ${i<l?'f':''}"></span>`).join('')}</div></div>${max?'<span class="up">Maxed</span>':`<button class="btn" data-a="buy" data-v="${k}" ${S.cash<u.c[l]?'disabled':''}>Buy ${money(u.c[l])}</button>`}</div></div>`}).join('');
+}
+function sellItem(id,n){const it=ALL[id];n=Math.min(n,S.stash[id]||0);S.cash+=n*Math.round(it.v*mk[it.s]);S.stash[id]-=n}
+function act(a,v){
+ if(a=='tab'){tab=v}
+ else if(a=='unlock'){const s=STORES.find(x=>x.id==v);if(S.cash>=s.cost){S.cash-=s.cost;S.unlocked[v]=1;toast(s.n+' is on the board')}}
+ else if(a=='go'){return startRun(v)}
+ else if(a=='sell'){sellItem(v,1)}
+ else if(a=='sellall'){sellItem(v,99)}
+ else if(a=='sellevery'){Object.keys(S.stash).forEach(k=>sellItem(k,99));toast('Vic peels off the cash and drives off')}
+ else if(a=='buy'){const u=UP[v];if(S.cash>=u.c[S.up[v]]){S.cash-=u.c[S.up[v]];S.up[v]++}}
+ else if(a=='close'){$('modal').hidden=true}
+ save();render();
+}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(b)act(b.dataset.a,b.dataset.v)});
+
+/* ---- Heist ---- */
+const solid=(c,r)=>c<=0||r<=0||c>=COLS-1||r>=ROWS-1||(((r>=2&&r<=3)||(r>=6&&r<=7))&&((c>=3&&c<=6)||(c>=9&&c<=12)));
+const solidAt=(x,y)=>solid(Math.floor(x/T),Math.floor(y/T));
+const boxFree=(x,y,r)=>!(solidAt(x-r,y-r)||solidAt(x+r,y-r)||solidAt(x-r,y+r)||solidAt(x+r,y+r));
+const los=(x1,y1,x2,y2)=>{const d=Math.hypot(x2-x1,y2-y1),n=Math.ceil(d/6);for(let i=1;i<n;i++){if(solidAt(x1+(x2-x1)*i/n,y1+(y2-y1)*i/n))return false}return true};
+const EX=1.5*T,EY=9.5*T,RNG=170,HALF=.5;
+const keys={};
+function startRun(id){
+ const st=STORES.find(s=>s.id==id),cap=4+2*S.up.bag;
+ const free=[];for(let r=1;r<ROWS-1;r++)for(let c=1;c<COLS-1;c++)if(!solid(c,r)&&Math.hypot(c*T+20-EX,r*T+20-EY)>110)free.push([c*T+20,r*T+20]);
+ const items=[];const pool=st.items.map(i=>ALL[i[0]]);
+ for(let k=0;k<8;k++){const w=pool.map(p=>1/Math.pow(p.v,.55)),tot=w.reduce((a,b)=>a+b);let x=Math.random()*tot,pick=pool[0];for(let i=0;i<pool.length;i++){x-=w[i];if(x<=0){pick=pool[i];break}}
+  const p=free.splice(Math.floor(Math.random()*free.length),1)[0];items.push({x:p[0],y:p[1],it:pick})}
+ const mkG=(wp,i)=>{const w=wp.map(p=>[p[0]*T+20,p[1]*T+20]);return{x:w[i][0],y:w[i][1],w,i:(i+1)%w.length,a:0}};
+ const guards=[mkG([[1,1],[14,1],[14,9],[1,9]],Math.floor(Math.random()*4))];
+ if(st.g>1)guards.push(mkG([[1,4],[14,4],[14,5],[1,5]],Math.random()<.5?0:2));
+ G={st,cap,items,guards,loot:[],p:{x:EX,y:EY},det:0,t:0,tog:false,over:false,spd:(105+12*S.up.spd),hood:1-.12*S.up.hood};
+ $('game').hidden=false;last=performance.now();requestAnimationFrame(loop);hud();
+}
+let last=0;
+function hud(){const v=G.loot.reduce((a,b)=>a+b.v,0);$('loot').textContent='🎒 '+G.loot.length+'/'+G.cap+' · '+money(v)+' street value';$('bar').firstChild.style.width=Math.min(100,G.det*100)+'%';$('bar').firstChild.style.background=G.det>.6?'var(--red)':G.det>.25?'var(--amber)':'var(--teal)'}
+function loop(now){
+ if(!G||G.over)return;const dt=Math.min(.05,(now-last)/1000);last=now;G.t+=dt;
+ const crouch=keys.Shift||keys.shift||G.tog;
+ let dx=(keys.ArrowRight||keys.d?1:0)-(keys.ArrowLeft||keys.a?1:0),dy=(keys.ArrowDown||keys.s?1:0)-(keys.ArrowUp||keys.w?1:0);
+ if(dx||dy){const l=Math.hypot(dx,dy),sp=G.spd*(crouch?.5:1)*dt,p=G.p;
+  if(boxFree(p.x+dx/l*sp,p.y,10))p.x+=dx/l*sp;if(boxFree(p.x,p.y+dy/l*sp,10))p.y+=dy/l*sp}
+ const p=G.p;
+ G.items=G.items.filter(o=>{if(Math.hypot(o.x-p.x,o.y-p.y)<20&&G.loot.length<G.cap){G.loot.push(o.it);toast('Grabbed '+o.it.n);return false}return true});
+ let seen=false;
+ G.guards.forEach(g=>{const tx=g.w[g.i][0],ty=g.w[g.i][1],d=Math.hypot(tx-g.x,ty-g.y);
+  if(d<4)g.i=(g.i+1)%g.w.length;else{g.x+=(tx-g.x)/d*G.st.gs*dt;g.y+=(ty-g.y)/d*G.st.gs*dt;
+   let ta=Math.atan2(ty-g.y,tx-g.x),df=Math.atan2(Math.sin(ta-g.a),Math.cos(ta-g.a));g.a+=df*Math.min(1,dt*6)}
+  const ex=p.x-g.x,ey=p.y-g.y,dd=Math.hypot(ex,ey),an=Math.abs(Math.atan2(Math.sin(Math.atan2(ey,ex)-g.a),Math.cos(Math.atan2(ey,ex)-g.a)));
+  if(dd<RNG&&(an<HALF||(dd<34&&!crouch))&&los(g.x,g.y,p.x,p.y))seen=true});
+ G.det=seen?G.det+dt*(crouch?.6:1.2)*G.hood:Math.max(0,G.det-dt*.45);
+ hud();draw(crouch);
+ if(G.det>=1)return endRun(false);
+ if(G.t>1.2&&Math.hypot(p.x-EX,p.y-EY)<16)return endRun(true);
+ requestAnimationFrame(loop);
+}
+function draw(crouch){
+ const c=$('cv').getContext('2d'),p=G.p;c.clearRect(0,0,W,H);
+ for(let r=0;r<ROWS;r++)for(let q=0;q<COLS;q++){const edge=q==0||r==0||q==COLS-1||r==ROWS-1;
+  c.fillStyle=edge?'#0d1022':solid(q,r)?'#3a2f58':((q+r)%2?'#1d2240':'#1a1f3a');c.fillRect(q*T,r*T,T,T);
+  if(solid(q,r)&&!edge){c.fillStyle='#4b3d73';c.fillRect(q*T,r*T,T,5)}}
+ c.fillStyle='#f5b942';c.fillRect(0,9*T+6,6,T-12);
+ c.fillStyle='#45c1b055';c.fillRect(T,9*T,T,T);
+ c.font='22px serif';c.textAlign='center';
+ G.items.forEach(o=>c.fillText(o.it.e,o.x,o.y+8));
+ const gr=c.createRadialGradient(p.x,p.y,30,p.x,p.y,190);gr.addColorStop(0,'rgba(5,7,14,.1)');gr.addColorStop(1,'rgba(5,7,14,.95)');
+ c.fillStyle=gr;c.fillRect(0,0,W,H);
+ G.guards.forEach(g=>{c.beginPath();c.moveTo(g.x,g.y);
+  for(let i=0;i<=24;i++){const a=g.a-HALF+HALF*2*i/24;let d=0;while(d<RNG&&!solidAt(g.x+Math.cos(a)*d,g.y+Math.sin(a)*d))d+=5;c.lineTo(g.x+Math.cos(a)*d,g.y+Math.sin(a)*d)}
+  c.closePath();const cg=c.createRadialGradient(g.x,g.y,5,g.x,g.y,RNG);cg.addColorStop(0,'rgba(255,225,140,.5)');cg.addColorStop(1,'rgba(255,225,140,.05)');c.fillStyle=cg;c.fill();
+  c.fillStyle='#e5484d';c.beginPath();c.arc(g.x,g.y,11,0,7);c.fill();c.fillStyle='#fff';c.beginPath();c.arc(g.x+Math.cos(g.a)*5,g.y+Math.sin(g.a)*5,3,0,7);c.fill()});
+ c.fillStyle=crouch?'#2a8f82':'#45c1b0';c.beginPath();c.arc(p.x,p.y,crouch?8:10,0,7);c.fill();
+ c.strokeStyle='#0b0e1a';c.lineWidth=2;c.stroke();
+}
+function endRun(ok){
+ G.over=true;$('game').hidden=true;S.nights++;const L=G.loot,st=G.st;let html='',bonusMsg='';
+ if(ok){
+  L.forEach(i=>{S.stash[i.id]=(S.stash[i.id]||0)+1;S.found[i.id]=1});
+  if(!S.bonus[st.id]&&st.items.every(i=>S.found[i[0]])){S.bonus[st.id]=1;S.cash+=st.bonus;bonusMsg=`<p class="up">Set complete: all four ${st.n.toLowerCase()} pieces. The collector sends ${money(st.bonus)}.</p>`}
+  html=`<h2>Clean getaway</h2><p>${L.length?L.map(i=>i.e+' '+i.n).join('<br>'):'You left empty-handed. Nothing was worth the risk.'}</p>${bonusMsg}`;
+ }else{
+  S.caught++;const fine=Math.round(S.cash*.1);S.cash-=fine;
+  html=`<h2>Busted</h2><p>The flashlight found you. You dropped ${L.length} item${L.length==1?'':'s'} and paid a ${money(fine)} bribe to walk away.</p>`;
+ }
+ reroll();save();render();
+ const m=$('modal');m.className=ok?'':'bad';m.innerHTML=`<div class="box">${html}<div class="row" style="margin-top:14px"><button class="btn" data-a="close">Back to the hideout</button></div></div>`;m.hidden=false;
+ G=null;
+}
+addEventListener('keydown',e=>{const k=e.key.length==1?e.key.toLowerCase():e.key;keys[k]=1;if(G&&k.startsWith('Arrow'))e.preventDefault()});
+addEventListener('keyup',e=>{const k=e.key.length==1?e.key.toLowerCase():e.key;keys[k]=0});
+document.querySelectorAll('#pad [data-k]').forEach(b=>{const k=b.dataset.k;b.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=1});['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>keys[k]=0))});
+$('crouch').addEventListener('click',e=>{if(G){G.tog=!G.tog;e.target.style.background=G.tog?'var(--amber)':'';e.target.style.color=G.tog?'#1a1405':''}});
+render();
+</script></body></html>
