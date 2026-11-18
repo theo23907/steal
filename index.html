@@ -75,11 +75,16 @@ const STORES=[
 {id:'corner',n:'Corner shop',cost:0,g:1,gs:48,bonus:150,blurb:'One bored clerk and a flickering sign. Easy money.',items:[['candy','🍫','Candy crate',15],['drinks','🥤','Energy drinks',30],['radio','📻','Pocket radio',70],['lotto','🎟️','Lottery tickets',140]]},
 {id:'pawn',n:'Pawn shop',cost:250,g:1,gs:62,bonus:600,blurb:'Other people’s regrets, priced to move.',items:[['watch','⌚','Wristwatch',160],['cam','📷','Film camera',220],['guitar','🎸','Electric guitar',300],['ring','💍','Gold ring',450]]},
 {id:'tech',n:'Electronics store',cost:900,g:2,gs:60,bonus:1800,blurb:'Two guards, cameras everywhere, shelves full of gadgets.',items:[['phone','📱','Phones',320],['console','🎮','Game console',420],['laptop','💻','Laptop',600],['drone','🛸','Camera drone',850]]},
-{id:'jewel',n:'Jewelry store',cost:3000,g:2,gs:76,bonus:6000,blurb:'Fast guards. Spotless glass. The big score.',items:[['pearls','📿','Pearl strand',800],['vase','🏺','Ming vase',1300],['diamond','💎','Loose diamond',2000],['crown','👑','Tiara',3500]]}];
+{id:'jewel',n:'Jewelry store',cost:3000,g:2,gs:76,bonus:6000,blurb:'Fast guards. Spotless glass. The big score.',items:[['pearls','📿','Pearl strand',800],['vase','🏺','Ming vase',1300],['diamond','💎','Loose diamond',2000],['crown','👑','Tiara',3500]]},
+{id:'dock',city:1,n:'Dockside warehouse',cost:4000,g:2,gs:64,bonus:15000,blurb:'Shipping containers and two guards who know every shadow.',items:[['cargo','📦','Cargo crate',2500],['wine','🍷','Vintage wine case',3500],['bike','🏍️','Motorbike',5000],['gold','🪙','Gold coins',7500]]},
+{id:'casino',city:1,n:'Grand casino',cost:9000,g:2,gs:70,bonus:25000,blurb:'Bright lights, dark back rooms, security on every floor.',items:[['chips','🎲','Poker chips',4000],['whisky','🥃','Rare whiskey',5500],['slot','🎰','Slot machine',8000],['cage','💰','Cash cage',12000]]},
+{id:'gallery',city:1,n:'Art gallery',cost:18000,g:3,gs:76,bonus:40000,blurb:'Three guards and a lot of very expensive walls.',items:[['paint','🖼️','Landscape painting',6000],['bust','🗿','Marble bust',9000],['violin','🎻','Antique violin',12000],['mask','🎭','Gilded mask',16000]]},
+{id:'bank',city:1,n:'Private bank',cost:35000,g:3,gs:82,bonus:60000,blurb:'Old money, new alarms, fast guards.',items:[['bond','💵','Bearer bonds',8000],['bar','🥇','Gold bar',13000],['stamp','✉️','Rare stamp',18000],['ruby','🔴','Blood ruby',25000]]},
+{id:'museum',city:1,n:'City museum',cost:60000,g:3,gs:90,bonus:100000,blurb:'The final score. The guards here are relentless.',items:[['skull','🦴','Fossil skull',15000],['amulet','🧿','Pharaoh’s amulet',22000],['sword','🗡️','Samurai sword',30000],['scepter','🔱','Royal scepter',45000]]}];
 const ALL={};STORES.forEach(s=>s.items.forEach(i=>ALL[i[0]]={id:i[0],e:i[1],n:i[2],v:i[3],s:s.id}));
 const UP={spd:{n:'Soft-soled shoes',d:'Move faster in the dark',c:[150,400,900,1800]},bag:{n:'Bigger duffel',d:'Carry two more items per run',c:[200,500,1200,2500]},hood:{n:'Dark hoodie',d:'Guards notice you more slowly',c:[250,700,1500,3000]}};
 const KEY='nightshift-v1';
-let S={cash:0,stash:{},found:{},bonus:{},unlocked:{corner:1},up:{spd:0,bag:0,hood:0},nights:0,caught:0},tab='home',mk={},G=null;
+let S={cash:0,stash:{},found:{},bonus:{},unlocked:{corner:1},up:{spd:0,bag:0,hood:0},nights:0,caught:0,city:0,pick:0},tab='home',mk={},G=null;
 try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 const $=id=>document.getElementById(id),$$=(a,b)=>a+Math.random()*(b-a);
@@ -94,15 +99,15 @@ function render(){
  $('view').innerHTML=({home:vHome,coll:vColl,fence:vFence,gear:vGear})[tab]();
 }
 function vHome(){
- return '<h2 style="margin-bottom:10px">Tonight’s jobs</h2>'+STORES.map(s=>{
+ const card=s=>{
   const u=S.unlocked[s.id];
   return `<div class="card ${u?'':'lock'}"><div class="row"><div><h3>${s.n}</h3><div class="sub">${s.blurb}</div><div class="sub">${s.g} guard${s.g>1?'s':''}, loot worth ${money(s.items[0][3])} to ${money(s.items[3][3])}</div></div>
-  ${u?`<button class="btn" data-a="go" data-v="${s.id}">Go out</button>`:`<button class="ghost" data-a="unlock" data-v="${s.id}" ${S.cash<s.cost?'disabled':''}>Case it for ${money(s.cost)}</button>`}</div></div>`}).join('')
-  +'<p class="sub">Grab what you can, then get back to the door before a guard’s flashlight finds you. Sell your haul to the fence, or keep one of everything for the collection.</p>';
+  ${u?`<button class="btn" data-a="go" data-v="${s.id}">Go out</button>`:`<button class="ghost" data-a="unlock" data-v="${s.id}" ${S.cash<s.cost?'disabled':''}>Case it for ${money(s.cost)}</button>`}</div></div>`};
+ const cityCard=`<div class="card"><div class="row"><div><h3>Buy Port Harlow</h3><div class="sub">A new city with five high-end zones and far richer loot. Guards here chase you down once they spot you.</div></div><button class="btn" data-a="city" ${S.cash<100000?'disabled':''}>Buy for $100,000</button></div></div>`;return '<h2 style="margin-bottom:10px">Home town</h2>'+STORES.filter(s=>!s.city).map(card).join('')+'<h2 style="margin:18px 0 10px">Port Harlow</h2>'+(S.city?STORES.filter(s=>s.city).map(card).join(''):cityCard)+'<p class="sub">Grab what you can, then get back to the door before a guard’s flashlight finds you. Sell your haul to the fence, or keep one of everything for the collection.</p>';
 }
 function vColl(){
- const total=Object.keys(ALL).length,got=Object.keys(S.found).length;
- return `<h2>Collection</h2><div class="sub" style="margin:4px 0 12px">${got} of ${total} pieces found. Complete a store’s set for a cash bonus.</div>`+STORES.map(s=>{
+ const V=STORES.filter(s=>!s.city||S.city),total=V.length*4,got=V.reduce((a,s)=>a+s.items.filter(i=>S.found[i[0]]).length,0);
+ return `<h2>Collection</h2><div class="sub" style="margin:4px 0 12px">${got} of ${total} pieces found. Complete a store’s set for a cash bonus.</div>`+V.map(s=>{
   const n=s.items.filter(i=>S.found[i[0]]).length;
   return `<div class="card"><div class="row"><h3>${s.n}</h3><span class="sub">${n}/4 ${S.bonus[s.id]?'<span class="up">Set bonus paid '+money(s.bonus)+'</span>':'Bonus '+money(s.bonus)}</span></div><div class="grid">`+
   s.items.map(i=>{const f=S.found[i[0]];return `<div class="tile ${f?'':'no'}"><div class="e">${i[1]}</div><div>${f?i[2]:'Not found yet'}</div><div class="sub">${f?money(i[3])+' · in stash ×'+(S.stash[i[0]]||0):'Try the '+s.n.toLowerCase()}</div></div>`}).join('')+'</div></div>'}).join('');
@@ -110,13 +115,13 @@ function vColl(){
 function vFence(){
  const ids=Object.keys(S.stash).filter(k=>S.stash[k]>0);
  const car=`<div class="car"><span class="v">🚘</span><div style="margin-left:90px;margin-top:-52px;position:relative;z-index:1"><h3>Vic’s sedan</h3><div class="sub">Engine running, window down, no questions asked.</div></div></div>`;
- const dem='<div>'+STORES.map(s=>`<span class="pill">${s.n}: <b class="${mk[s.id]>=1?'up':'dn'}">${Math.round(mk[s.id]*100)}%</b></span>`).join('')+'</div>';
+ const dem='<div>'+STORES.filter(s=>!s.city||S.city).map(s=>`<span class="pill">${s.n}: <b class="${mk[s.id]>=1?'up':'dn'}">${Math.round(mk[s.id]*100)}%</b></span>`).join('')+'</div>';
  if(!ids.length)return car+dem+'<div class="card lock" style="margin-top:10px">Your stash is empty. Go out after dark and bring something back.</div>';
  return car+dem+'<div style="margin-top:10px">'+ids.map(id=>{const it=ALL[id],p=Math.round(it.v*mk[it.s]);return `<div class="card"><div class="row"><div>${it.e} <b>${it.n}</b> ×${S.stash[id]}<div class="sub">Vic pays ${money(p)} each</div></div><div><button class="ghost" data-a="sell" data-v="${id}">Sell 1</button> <button class="btn" data-a="sellall" data-v="${id}">Sell all ${money(p*S.stash[id])}</button></div></div></div>`}).join('')+'<button class="btn" data-a="sellevery">Sell everything</button></div>';
 }
 function vGear(){
  return '<h2 style="margin-bottom:10px">Gear</h2>'+Object.keys(UP).map(k=>{const u=UP[k],l=S.up[k],max=l>=u.c.length;
-  return `<div class="card"><div class="row"><div><h3>${u.n}</h3><div class="sub">${u.d}</div><div style="margin-top:6px">${u.c.map((c,i)=>`<span class="pip ${i<l?'f':''}"></span>`).join('')}</div></div>${max?'<span class="up">Maxed</span>':`<button class="btn" data-a="buy" data-v="${k}" ${S.cash<u.c[l]?'disabled':''}>Buy ${money(u.c[l])}</button>`}</div></div>`}).join('');
+  return `<div class="card"><div class="row"><div><h3>${u.n}</h3><div class="sub">${u.d}</div><div style="margin-top:6px">${u.c.map((c,i)=>`<span class="pip ${i<l?'f':''}"></span>`).join('')}</div></div>${max?'<span class="up">Maxed</span>':`<button class="btn" data-a="buy" data-v="${k}" ${S.cash<u.c[l]?'disabled':''}>Buy ${money(u.c[l])}</button>`}</div></div>`}).join('')+`<div class="card"><div class="row"><div><h3>Lockpick set</h3><div class="sub">Lets you crack safes, which hold a pile of top-tier loot.</div></div>${S.pick?'<span class="up">Owned</span>':`<button class="btn" data-a="pick" ${S.cash<20000?'disabled':''}>Buy $20,000</button>`}</div></div>`;
 }
 function sellItem(id,n){const it=ALL[id];n=Math.min(n,S.stash[id]||0);S.cash+=n*Math.round(it.v*mk[it.s]);S.stash[id]-=n}
 function act(a,v){
@@ -126,6 +131,8 @@ function act(a,v){
  else if(a=='sell'){sellItem(v,1)}
  else if(a=='sellall'){sellItem(v,99)}
  else if(a=='sellevery'){Object.keys(S.stash).forEach(k=>sellItem(k,99));toast('Vic peels off the cash and drives off')}
+ else if(a=='city'){if(S.cash>=100000){S.cash-=100000;S.city=1;toast('Welcome to Port Harlow')}}
+ else if(a=='pick'){if(S.cash>=20000&&!S.pick){S.cash-=20000;S.pick=1;toast('Lockpick acquired')}}
  else if(a=='buy'){const u=UP[v];if(S.cash>=u.c[S.up[v]]){S.cash-=u.c[S.up[v]];S.up[v]++}}
  else if(a=='close'){$('modal').hidden=true}
  save();render();
@@ -144,10 +151,11 @@ function startRun(id){
  const free=[];for(let r=1;r<ROWS-1;r++)for(let c=1;c<COLS-1;c++)if(!solid(c,r)&&Math.hypot(c*T+20-EX,r*T+20-EY)>110)free.push([c*T+20,r*T+20]);
  const items=[];const pool=st.items.map(i=>ALL[i[0]]);
  for(let k=0;k<8;k++){const w=pool.map(p=>1/Math.pow(p.v,.55)),tot=w.reduce((a,b)=>a+b);let x=Math.random()*tot,pick=pool[0];for(let i=0;i<pool.length;i++){x-=w[i];if(x<=0){pick=pool[i];break}}
-  const p=free.splice(Math.floor(Math.random()*free.length),1)[0];items.push({x:p[0],y:p[1],it:pick})}
+  const p=free.splice(Math.floor(Math.random()*free.length),1)[0];items.push({x:p[0],y:p[1],it:pick,safe:Math.random()<.05})}
  const mkG=(wp,i)=>{const w=wp.map(p=>[p[0]*T+20,p[1]*T+20]);return{x:w[i][0],y:w[i][1],w,i:(i+1)%w.length,a:0}};
  const guards=[mkG([[1,1],[14,1],[14,9],[1,9]],Math.floor(Math.random()*4))];
  if(st.g>1)guards.push(mkG([[1,4],[14,4],[14,5],[1,5]],Math.random()<.5?0:2));
+ if(st.g>2)guards.push(mkG([[7,1],[7,9],[8,9],[8,1]],Math.random()<.5?0:2));
  G={st,cap,items,guards,loot:[],p:{x:EX,y:EY},det:0,t:0,tog:false,over:false,spd:(105+12*S.up.spd),hood:1-.12*S.up.hood};
  $('game').hidden=false;last=performance.now();requestAnimationFrame(loop);hud();
 }
@@ -160,16 +168,20 @@ function loop(now){
  if(dx||dy){const l=Math.hypot(dx,dy),sp=G.spd*(crouch?.5:1)*dt,p=G.p;
   if(boxFree(p.x+dx/l*sp,p.y,10))p.x+=dx/l*sp;if(boxFree(p.x,p.y+dy/l*sp,10))p.y+=dy/l*sp}
  const p=G.p;
- G.items=G.items.filter(o=>{if(Math.hypot(o.x-p.x,o.y-p.y)<20&&G.loot.length<G.cap){G.loot.push(o.it);toast('Grabbed '+o.it.n);return false}return true});
+ G.items=G.items.filter(o=>{const d=Math.hypot(o.x-p.x,o.y-p.y);
+  if(o.safe){if(d<24){if(!S.pick){if(G.t>(G.nt||0)){G.nt=G.t+2.5;toast('Locked safe. You need a lockpick from the Gear tab.')}}else{o.prog=(o.prog||0)+dt;if(o.prog>=2.2){const top=G.st.items.slice(2).map(i=>ALL[i[0]]);for(let k=0;k<4;k++)G.loot.push(top[Math.floor(Math.random()*2)]);toast('Safe cracked! 4 valuables inside');return false}}}else o.prog=0;return true}
+  if(d<20&&G.loot.length<G.cap){G.loot.push(o.it);toast('Grabbed '+o.it.n);return false}return true});
  let seen=false;
  G.guards.forEach(g=>{const tx=g.w[g.i][0],ty=g.w[g.i][1],d=Math.hypot(tx-g.x,ty-g.y);
-  if(d<4)g.i=(g.i+1)%g.w.length;else{g.x+=(tx-g.x)/d*G.st.gs*dt;g.y+=(ty-g.y)/d*G.st.gs*dt;
+  if(G.chase){const px=p.x-g.x,py=p.y-g.y,pd=Math.hypot(px,py)||1,sp=G.st.gs*1.15*dt,nx=g.x+px/pd*sp,ny=g.y+py/pd*sp;if(boxFree(nx,g.y,10))g.x=nx;if(boxFree(g.x,ny,10))g.y=ny;g.a=Math.atan2(py,px);if(pd<18)G.caught=1}else if(d<4)g.i=(g.i+1)%g.w.length;else{g.x+=(tx-g.x)/d*G.st.gs*dt;g.y+=(ty-g.y)/d*G.st.gs*dt;
    let ta=Math.atan2(ty-g.y,tx-g.x),df=Math.atan2(Math.sin(ta-g.a),Math.cos(ta-g.a));g.a+=df*Math.min(1,dt*6)}
   const ex=p.x-g.x,ey=p.y-g.y,dd=Math.hypot(ex,ey),an=Math.abs(Math.atan2(Math.sin(Math.atan2(ey,ex)-g.a),Math.cos(Math.atan2(ey,ex)-g.a)));
   if(dd<RNG&&(an<HALF||(dd<34&&!crouch))&&los(g.x,g.y,p.x,p.y))seen=true});
  G.det=seen?G.det+dt*(crouch?.6:1.2)*G.hood:Math.max(0,G.det-dt*.45);
  hud();draw(crouch);
- if(G.det>=1)return endRun(false);
+ if(G.det>=1&&G.st.city&&!G.chase){G.chase=1;G.det=1;G.cs=0;toast('Spotted! They’re chasing you. Run for the door!')}
+ if(G.chase){G.det=1;G.cs=seen?0:G.cs+dt;if(G.cs>4){G.chase=0;G.det=.5;toast('You lost them. Stay quiet.')}}
+ if(G.caught||(G.det>=1&&!G.chase))return endRun(false);
  if(G.t>1.2&&Math.hypot(p.x-EX,p.y-EY)<16)return endRun(true);
  requestAnimationFrame(loop);
 }
@@ -181,7 +193,7 @@ function draw(crouch){
  c.fillStyle='#f5b942';c.fillRect(0,9*T+6,6,T-12);
  c.fillStyle='#45c1b055';c.fillRect(T,9*T,T,T);
  c.font='22px serif';c.textAlign='center';
- G.items.forEach(o=>c.fillText(o.it.e,o.x,o.y+8));
+ G.items.forEach(o=>{c.fillText(o.safe?'🗄️':o.it.e,o.x,o.y+8);if(o.safe){c.strokeStyle='#f5b942';c.lineWidth=2;c.strokeRect(o.x-15,o.y-15,30,30);if(o.prog){c.fillStyle='#f5b942';c.fillRect(o.x-15,o.y+19,30*o.prog/2.2,4)}}});
  const gr=c.createRadialGradient(p.x,p.y,30,p.x,p.y,190);gr.addColorStop(0,'rgba(5,7,14,.1)');gr.addColorStop(1,'rgba(5,7,14,.95)');
  c.fillStyle=gr;c.fillRect(0,0,W,H);
  G.guards.forEach(g=>{c.beginPath();c.moveTo(g.x,g.y);
